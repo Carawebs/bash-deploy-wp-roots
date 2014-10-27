@@ -3,6 +3,8 @@ Auto Deploy WordPress & Roots
 
 For a local Ubuntu 14.04 deverlopment enviropnment. Requires [WP-CLI](http://wp-cli.org/).
 
+Note: I'm pretty new to BASH scripting so please read through this code carefully. It works well for us, but use at your own risk!
+
 ##What it Does##
 
 * Creates a new directory for a WordPress site in ```/var/www```.
