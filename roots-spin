@@ -1,0 +1,248 @@
+#!/bin/bash
+# This script:
+# - Creates a new directory for a WordPress site in /var/www.
+# - Creates a new WordPress test site, with a fresh database.
+# - Downloads, renames and activates the Roots theme.
+# - Sets up a new GitHub repo for the new theme (GitHub personal token needs to be in place)
+# - Downloads & activates the "Soil" plugin.
+# - Installs node & bower dependencies by running npm install.
+# - Requires WP-CLI: http://wp-cli.org/
+# - Ubuntu: save this script as /usr/local/bin/roots-spin
+# - Make it executable, then you can invoke it by typing "roots-spin" in the terminal.
+# NOTE: depending on your node setup, you may need to amend the setup_node () function in this script (see inline comments).
+# ------------------------------------------------------------------------------
+# Set up directory, download wp core
+
+echo -e "Please enter the name of the new wp directory:"
+read  wp_dir
+cd /var/www
+sudo mkdir $wp_dir
+sudo chown -R $USER /var/www/$wp_dir
+cd /var/www/$wp_dir
+wp core download
+echo "The new directory has been created at /var/www/$wp_dir"
+echo "It is owned by \"$USER\""
+echo "WordPress core has been downloaded"
+
+# ------------------------------------------------------------------------------
+# Build new database
+
+echo -e "This script will create a local database with a new user. Username & password based on DB name, but this is OK because we're working LOCALLY."
+echo -e "Enter the name of the new database:"
+read  db_name
+
+# Set up variables
+# Username is just the "salted" db name. For publicly accessible databases, make this more secure.
+newuser=$db_name
+newuser+=_user
+# Password is just the "salted" db name. Adjust this for better passwords - require user input.
+newpassword=$db_name
+newpassword+=_pass1234
+
+echo -e "Enter the MySQL root password:"
+read  rootpassword
+
+db="create database $db_name;GRANT ALL PRIVILEGES ON $db_name.* TO $newuser@localhost IDENTIFIED BY '$newpassword';FLUSH PRIVILEGES;"
+mysql -u root -p$rootpassword -e "$db"
+
+if [ $? != "0" ]; then  # Note: "0" is the return from successful completion of the previous operation in BASH.
+ echo "[Error]: Database creation failed"
+ exit 1
+else
+
+# ---------------------------
+# Set up wp-config.php. These are WP-CLI commands.
+# ---------------------------
+
+wp core config --dbname=$db_name --dbuser=$newuser --dbpass=$newpassword --dbhost=localhost
+
+# ---------------------------
+# Install WordPress. WP-CLI.
+# ---------------------------
+
+echo -e "Enter a strong password - your database may be exported to a publicly accessible server, so please set a strong password."
+read strong_password
+
+echo -e "Enter a username. NOT 'ADMIN'!"
+read username
+
+wp core install --url=http://localhost/$wp_dir --title="Basic Test Site" --admin_user=$username --admin_password=$strong_password --admin_email=you@yourweb.com
+
+
+ echo "------------------------------------------"
+ echo " WordPress has been installed successfully: http://localhost/$wp_dir "
+ echo "------------------------------------------"
+ echo " DB Info: "
+ echo ""
+ echo " DB Name: $dbname"
+ echo " DB User: $newuser"
+ echo " DB Pass: $newpassword"
+ echo "------------------------------------------"
+ echo " WordPress User details:"
+ echo ""
+ echo " WP username: $username"
+ echo " WP password: $strong_password"
+fi
+
+# ---------------------------------
+# Set Up Roots Theme
+
+setup_theme () {
+cd /var/www/$wp_dir/wp-content/themes
+git clone https://github.com/roots/roots.git
+echo -e "Choose a name for the new theme:"
+read themename
+cp -r /var/www/$wp_dir/wp-content/themes/roots /var/www/$wp_dir/wp-content/themes/$themename
+
+# Change first line of style.css to avoid confusion
+themeline="Theme Name: "
+themeline+=$themename
+
+awk -v stylename="$themeline" '{ if (NR == 1) print stylename; else print $0}' /var/www/$wp_dir/wp-content/themes/$themename/style.css > /var/www/$wp_dir/wp-content/themes/$themename/stylemod.css
+sudo cp /var/www/$wp_dir/wp-content/themes/$themename/stylemod.css /var/www/$wp_dir/wp-content/themes/$themename/style.css
+rm -rf /var/www/$wp_dir/wp-content/themes/$themename/stylemod.css
+
+echo -e "-------------------------------------------------------------------------"
+echo -e "The first line of style.css has been amended"
+echo -e "to reflect your theme name - don\'t forget to amend the rest of this file."
+echo -e "NB: this script has appended a line to wp-config.php to set up the Roots development environment."
+echo -e "-------------------------------------------------------------------------"
+
+# Backup original config file
+cp /var/www/$wp_dir/wp-config.php /var/www/$wp_dir/wp-config.bak.php
+
+newline="/* Define the Roots Environment */\ndefine('WP_ENV', 'development');\n"
+awk -v insert="$newline" 'NR==3{print insert}1' /var/www/$wp_dir/wp-config.php > /var/www/$wp_dir/wp-config-temp.php
+
+cp /var/www/$wp_dir/wp-config-temp.php /var/www/$wp_dir/wp-config.php
+
+}
+
+install_soil () {
+cd /var/www/$wp_dir/wp-content/plugins
+git clone https://github.com/roots/soil.git
+wp plugin activate soil
+}
+
+setup_node () {
+cd /var/www/$wp_dir/wp-content/themes/$themename
+
+# Note: npm runs without sudo if node has been installed on your system by the nvm method:
+# https://github.com/creationix/nvm (recommended!)
+# Otherwise, the npm install command should run as sudo, followed by bower install.
+# For this case comment out line 133 & enable lines 134 & 135)
+# Or move to the theme directory after installation is complete and run sudo npm install followed by bower install
+npm install
+# sudo npm install
+# bower install
+}
+
+run_grunt () {
+cd /var/www/$wp_dir/wp-content/themes/$themename
+grunt build
+}
+
+activate_theme () {
+cd /var/www/$wp_dir/wp-content/themes/$themename
+wp theme activate $themename
+}
+
+setup_repo () {
+cd /var/www/$wp_dir/wp-content/themes/$themename
+
+# remove existing git repo
+sudo rm -rf /var/www/$wp_dir/wp-content/themes/$themename/.git
+git init
+
+repo_name=$1
+
+  dir_name=`basename $(pwd)`
+  invalid_credentials=0
+
+  if [ "$repo_name" = "" ]; then
+    echo "  Repo name (hit enter to use '$dir_name')?"
+    read repo_name
+  fi
+
+  if [ "$repo_name" = "" ]; then
+    repo_name=$dir_name
+  fi
+
+  username=`git config github.user`
+  if [ "$username" = "" ]; then
+    echo "  Could not find username, run 'git config --global github.user <username>'"
+    invalid_credentials=1
+  fi
+
+  token=`git config github.token`
+  if [ "$token" = "" ]; then
+    echo "  Could not find token, run 'git config --global github.token <token>'"
+    invalid_credentials=1
+  fi
+
+  if [ "$invalid_credentials" -eq "1" ]; then
+    return 1
+  fi
+
+  echo -n "  Creating Github repository '$repo_name' ..."
+  curl -u "$username:$token" https://api.github.com/user/repos -d '{"name":"'$repo_name'"}' > /dev/null 2>&1
+  echo " done."
+
+  echo -n "  Pushing local code to remote ..."
+  git remote add origin git@github.com:$username/$repo_name.git > /dev/null 2>&1
+  git push -u origin master > /dev/null 2>&1
+  git add -A
+  git commit -m "First Commit"
+  git push origin master
+  echo " done."
+
+}
+
+	read -p "Do you want to set up the Roots 7 Starter theme? [y/N]" yn
+	case $yn in
+	[Yy]* ) setup_theme;;
+	[Nn]* ) exit ;;
+	* ) echo "Please answer yes or no.";;
+	esac
+
+	read -p "Set up a new GitHub repo for $themename? [y/N]" yn
+	case $yn in
+	[Yy]* ) setup_repo;;
+	[Nn]* ) ;;
+	* ) echo "Please answer yes or no.";;
+	esac
+
+	read -p "Do you want to install and activate the Roots \"Soil\" plugin? [y/N]" yn
+	case $yn in
+	[Yy]* ) install_soil;;
+	[Nn]* ) exit ;;
+	* ) echo "Please answer yes or no.";;
+	esac
+
+	read -p "Do you want to go to the $themename theme and install node dependencies? [y/N]" yn
+	case $yn in
+	[Yy]* ) setup_node;;
+	[Nn]* ) exit ;;
+	* ) echo "Please answer yes or no.";;
+	esac
+
+	read -p "Do you want to activate the $themename theme? [y/N]" yn
+	case $yn in
+	[Yy]* ) activate_theme;;
+	[Nn]* ) exit ;;
+	* ) echo "Please answer yes or no.";;
+	esac
+
+	read -p "Move to the theme directory and run the grunt build task? [y/N]" yn
+	case $yn in
+	[Yy]* ) run_grunt;;
+	[Nn]* ) exit ;;
+	* ) echo "Please answer yes or no.";;
+	esac
+
+sitelocation="Access your new site: http://localhost/"
+sitelocation+=$wp_dir
+echo -e "------------------------------------------------"
+echo -e "Finished!"
+echo $sitelocation
+echo -e "------------------------------------------------"
