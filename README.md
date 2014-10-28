@@ -17,7 +17,7 @@ Note: I'm pretty new to BASH scripting so please read through this code carefull
 This script automatically deploys a fresh local copy of WordPress with the Roots starter theme. Builds a new database, clones the Roots starter theme, copies Roots and sets up a newly renamed theme, installs node dependencies and sets up a fresh GitHub repo for your project.
 
 ##Security Notes##
-Because the script is designed to quickly create a local development site, the database credentials aren't particularly secure - the db name is used as a "salt" for username & password. You shoudln't use the unedited script to generate a WordPress installation on a public-facing server. It would be easy to amend this so that the user is prompted to enter secure database credentials.
+Because the script is designed to quickly create a local development site, the database credentials aren't particularly secure - the db name is used as a "salt" for username & password. You shouldn't use the unedited script to generate a WordPress installation on a public-facing server. It would be easy to amend this so that the user is prompted to enter secure database credentials.
 
 Because you might copy the local database to a public server, you should enter a secure username & password for WordPress when prompted.
 
