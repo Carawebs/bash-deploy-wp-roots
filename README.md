@@ -7,7 +7,7 @@ Note: I'm pretty new to BASH scripting so please read through this code carefull
 
 ##What it Does##
 
-* Creates a new directory for a WordPress site in ```/var/www```.
+* Creates a new directory for a [WordPress](https://github.com/WordPress/WordPress) site in ```/var/www```.
 * Creates a new WordPress test site, with a fresh database.
 * Downloads, renames and activates the [Roots](https://github.com/roots/roots) theme.
 * Sets up a new GitHub repo for the new theme (A GitHub personal token and SSH keys need to be in place)
