@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+
+    <title>Bash-deploy-wp-roots by Carawebs</title>
+  </head>
+
+  <body>
+
+    <header>
+      <div class="container">
+        <h1>Bash-deploy-wp-roots</h1>
+        <h2>Deploy a fresh local copy of WordPress with the Roots starter theme</h2>
+
+        <section id="downloads">
+          <a href="https://github.com/Carawebs/bash-deploy-wp-roots/zipball/master" class="btn">Download as .zip</a>
+          <a href="https://github.com/Carawebs/bash-deploy-wp-roots/tarball/master" class="btn">Download as .tar.gz</a>
+          <a href="https://github.com/Carawebs/bash-deploy-wp-roots" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <h1>
+<a id="auto-deploy-wordpress--roots" class="anchor" href="#auto-deploy-wordpress--roots" aria-hidden="true"><span class="octicon octicon-link"></span></a>Auto Deploy WordPress &amp; Roots</h1>
+
+<p>For a local Ubuntu 14.04 deverlopment enviropnment. Requires <a href="http://wp-cli.org/">WP-CLI</a>.</p>
+
+<p>Note: I'm pretty new to BASH scripting so please read through this code carefully. It works well for us, but use at your own risk!</p>
+
+<h2>
+<a id="what-it-does" class="anchor" href="#what-it-does" aria-hidden="true"><span class="octicon octicon-link"></span></a>What it Does</h2>
+
+<ul>
+<li>Creates a new directory for a <a href="https://github.com/WordPress/WordPress">WordPress</a> site in <code>/var/www</code>.</li>
+<li>Creates a new WordPress test site, with a fresh database.</li>
+<li>Downloads, renames and activates the <a href="https://github.com/roots/roots">Roots</a> theme.</li>
+<li>Sets up a new GitHub repo for the new theme (A GitHub personal token and SSH keys need to be in place)</li>
+<li>Downloads &amp; activates the <a href="https://github.com/roots/soil">Soil</a> plugin.</li>
+<li>Installs node &amp; bower dependencies by running npm install.</li>
+</ul>
+
+<p>This script automatically deploys a fresh local copy of WordPress with the Roots starter theme. Builds a new database, clones the Roots starter theme, copies Roots and sets up a newly renamed theme, installs node dependencies and sets up a fresh GitHub repo for your project.</p>
+
+<h2>
+<a id="security-notes" class="anchor" href="#security-notes" aria-hidden="true"><span class="octicon octicon-link"></span></a>Security Notes</h2>
+
+<p>Because the script is designed to quickly create a local development site, the database credentials aren't particularly secure - the db name is used as a "salt" for username &amp; password. You shouldn't use the unedited script to generate a WordPress installation on a public-facing server. It would be easy to amend this so that the user is prompted to enter secure database credentials.</p>
+
+<p>Because you might copy the local database to a public server, you should enter a secure username &amp; password for WordPress when prompted.</p>
+
+<h2>
+<a id="how-to-use" class="anchor" href="#how-to-use" aria-hidden="true"><span class="octicon octicon-link"></span></a>How to Use</h2>
+
+<ul>
+<li>Clone this script and save the <code>roots-spin</code> file as <code>/usr/local/bin/roots-spin</code>.</li>
+<li>Make it executable: <code>sudo chmod +x /usr/local/bin/roots-spin</code>.</li>
+<li>Run the script by entering "roots-spin" in the terminal.</li>
+</ul>
+
+<p>NOTE: depending on your node setup, you may need to amend the <code>setup_node ()</code> function in this script.
+See inline comments for more info.</p>
+
+<p>Pull requests welcome!</p>
+      </section>
+    </div>
+
+    
+  </body>
+</html>
